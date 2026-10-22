@@ -40,7 +40,7 @@ async function loadSiteConfig(): Promise<SiteConfig> {
   return lastSiteConfig;
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     console.error(error);
