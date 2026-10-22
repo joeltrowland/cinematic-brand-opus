@@ -33,7 +33,7 @@ describe("admin route destinations", () => {
       expect(match?.pathname.replace(/\/$/, ""), target).toBe(
         target.replace(/\/$/, ""),
       );
-      expect(match?.globalNotFound, target).not.toBe(true);
+      (expect(match? as { globalNotFound?: boolean })?.globalNotFound, target).not.toBe(true);
     }
   });
   it.each([
