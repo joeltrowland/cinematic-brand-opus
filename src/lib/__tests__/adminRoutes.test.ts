@@ -33,7 +33,7 @@ describe("admin route destinations", () => {
       expect(match?.pathname.replace(/\/$/, ""), target).toBe(
         target.replace(/\/$/, ""),
       );
-      expect(match?.globalNotFound, target).not.toBe(true);
+      expect((match as { globalNotFound?: boolean } | undefined)?.globalNotFound, target).not.toBe(true);
     }
   });
   it.each([
@@ -53,7 +53,7 @@ describe("admin route destinations", () => {
       "/admin",
     ]);
     expect(matches.at(-1)?.pathname).toBe(path);
-    expect(matches.at(-1)?.globalNotFound).not.toBe(true);
+    expect((matches.at(-1) as { globalNotFound?: boolean } | undefined)?.globalNotFound).not.toBe(true);
   });
 
   it.each(["posts", "pages", "content-types", "pillars"])(

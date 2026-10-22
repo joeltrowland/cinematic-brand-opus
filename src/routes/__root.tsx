@@ -8,6 +8,7 @@ import {
   Outlet,
   Scripts,
   useRouter,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -40,7 +41,7 @@ async function loadSiteConfig(): Promise<SiteConfig> {
   return lastSiteConfig;
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
     console.error(error);
