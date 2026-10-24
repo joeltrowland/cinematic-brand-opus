@@ -1,12 +1,5 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  CalendarDays,
-  Check,
-  CheckCircle2,
-  Clock3,
-} from "lucide-react";
+import { Check, CheckCircle2 } from "lucide-react";
 import {
   callUrl,
   type CallApplicationState,
@@ -14,12 +7,21 @@ import {
   type CallFunnelConfig,
   type CallPublication,
 } from "../../../supabase/functions/_shared/callFunnels";
-import CalendlyBooking from "./CalendlyBooking";
 import { isCalendlyUrl } from "./calendlyEmbed";
 import CallApplication, { type CallSubmit } from "./CallApplication";
 import CallVideo from "./CallVideo";
 import CallPreparationExtras from "./CallPreparationExtras";
 import { callDraftKey, removeCallDraft } from "./callFunnelDraft";
+import CallDestination from "./CallDestination";
+import { Appointment, BookingStage } from "./CallBooking";
+import { Proof, ShowcaseQuotes } from "./CallProof";
+import { selectedProof, useCallShowcase } from "./callShowcase";
+import {
+  HostCard,
+  ResultsRow,
+  StepList,
+  SystemSection,
+} from "./CallShowcaseSections";
 import "@/styles/call-funnels.css";
 
 export type CallStage =
@@ -42,6 +44,39 @@ export type CallFunnelExperienceProps = {
   onCalendlyBooked?: (inviteeUri: string) => Promise<CallApplicationState>;
 };
 
+function luminance(hex: string) {
+  return [1, 3, 5]
+    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((n) => (n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4))
+    .reduce((sum, n, i) => sum + n * [0.2126, 0.7152, 0.0722][i], 0);
+}
+function contrast(a: string, b: string) {
+  const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (high + 0.05) / (low + 0.05);
+}
+function mix(hex: string, toward: string, amount: number) {
+  const channel = (value: string, i: number) =>
+    parseInt(value.slice(i, i + 2), 16);
+  return `#${[1, 3, 5]
+    .map((i) =>
+      Math.round(
+        channel(hex, i) + (channel(toward, i) - channel(hex, i)) * amount,
+      )
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+/** The accent as small text: darkened or lightened until it reads at 4.5:1. */
+function accentForText(hex: string, background: string) {
+  const toward = luminance(background) > 0.5 ? "#000000" : "#ffffff";
+  for (let step = 0; step <= 20; step++) {
+    const candidate = mix(hex, toward, step / 20);
+    if (contrast(candidate, background) >= 4.5) return candidate;
+  }
+  return toward;
+}
+
 function accentText(hex: string) {
   const channels = [1, 3, 5]
     .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
@@ -50,178 +85,6 @@ function accentText(hex: string) {
     0.179
     ? "#000000"
     : "#ffffff";
-}
-
-function Proof({
-  publication,
-  alternative = false,
-  preview,
-  selectedIds,
-  heading,
-}: {
-  publication: CallPublication;
-  alternative?: boolean;
-  preview: boolean;
-  selectedIds?: string[];
-  heading?: string;
-}) {
-  const ids =
-    selectedIds ??
-    (alternative
-      ? publication.config.alternative.proofIds
-      : publication.config.proofIds);
-  const proof = ids.flatMap(
-    (id) => publication.proof.find((item) => item.id === id) || [],
-  );
-  if (!proof.length)
-    return preview ? (
-      <div className="cf-proof-guidance">
-        <p className="cf-eyebrow">Your customer stories belong here</p>
-        <p>
-          Select approved testimonials in the builder to show relevant outcomes
-          and honest experiences.
-        </p>
-      </div>
-    ) : null;
-  return (
-    <section className="cf-proof-section" aria-label="Customer stories">
-      <h2>
-        {heading ||
-          publication.config.invitation.proofHeading ||
-          "Hear from people who took the next step"}
-      </h2>
-      <div className="cf-proof-grid">
-        {proof.map((item) => {
-          const portrait = publication.config.proofImages[item.id];
-          return (
-            <figure className="cf-proof-card" key={item.id}>
-              {portrait && callUrl(portrait, true) && (
-                <img
-                  src={portrait}
-                  alt=""
-                  loading="lazy"
-                  width={160}
-                  height={160}
-                  className="cf-proof-portrait"
-                />
-              )}
-              {item.title && <h3>{item.title}</h3>}
-              <blockquote>{item.content}</blockquote>
-              <figcaption>{item.attribution}</figcaption>
-              {!preview && item.source_url && callUrl(item.source_url) && (
-                <a
-                  className="cf-small cf-plain-link"
-                  href={item.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View original story{" "}
-                  <ArrowUpRight size={14} aria-hidden="true" />
-                </a>
-              )}
-            </figure>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function Destination({
-  url,
-  children,
-  preview,
-}: {
-  url: string;
-  children: React.ReactNode;
-  preview: boolean;
-}) {
-  if (preview)
-    return (
-      <>
-        <button type="button" className="cf-button" disabled>
-          {children}
-          <ArrowUpRight size={19} aria-hidden="true" />
-        </button>
-        <p className="cf-small cf-muted">
-          External actions are disabled in preview.
-        </p>
-      </>
-    );
-  if (!url || !callUrl(url, true))
-    return (
-      <p className="cf-notice">
-        This next step is not available yet. Please check back soon.
-      </p>
-    );
-  return (
-    <a
-      className="cf-button"
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      {children}
-      <ArrowUpRight size={19} aria-hidden="true" />
-    </a>
-  );
-}
-
-function Appointment({ state }: { state: CallApplicationState | null }) {
-  const booking = state?.booking;
-  if (booking?.status !== "booked") return null;
-  let date = "Your scheduled time will be provided by your host.";
-  // Stored times are UTC; a UTC label reads as wrong to visitors, so use their own zone.
-  const zone = booking.timezone === "UTC" ? undefined : booking.timezone;
-  if (booking.startsAt && Number.isFinite(Date.parse(booking.startsAt))) {
-    const instant = new Date(booking.startsAt);
-    try {
-      date =
-        new Intl.DateTimeFormat(undefined, {
-          dateStyle: "full",
-          timeStyle: "short",
-          ...(zone ? { timeZone: zone } : {}),
-        }).format(instant) + (zone ? ` (${zone})` : "");
-    } catch {
-      date = `${instant.toLocaleString()} (your device’s time zone)`;
-    }
-  }
-  return (
-    <div className="cf-appointment">
-      <CheckCircle2 size={25} aria-hidden="true" />
-      <div>
-        <strong>Your call is booked</strong>
-        <p>{date}</p>
-        <p className="cf-small cf-muted">
-          {booking.source === "admin"
-            ? "Recorded by the team."
-            : "Confirmed by the scheduling provider."}
-        </p>
-        <div className="cf-inline-links">
-          {booking.manageUrl && callUrl(booking.manageUrl) && (
-            <a
-              className="cf-plain-link"
-              href={booking.manageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Manage your booking
-            </a>
-          )}
-          {booking.meetingUrl && callUrl(booking.meetingUrl) && (
-            <a
-              className="cf-plain-link"
-              href={booking.meetingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Join your call
-            </a>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 type PreparationProgress = {
@@ -303,17 +166,12 @@ function Preparation({
   return (
     <section className="cf-post-page">
       <div className="cf-post-heading">
-        <p className="cf-eyebrow">
-          {stage === "preparation"
-            ? "Make the most of your conversation"
-            : "Your preparation training"}
-        </p>
         <h1 tabIndex={-1}>
           {stage === "preparation"
             ? config.preparation.headline
             : config.training.headline}
         </h1>
-        <p>
+        <p className="cf-lede">
           {stage === "preparation"
             ? config.preparation.intro
             : config.training.intro}
@@ -371,7 +229,7 @@ function Preparation({
                 type="button"
                 onClick={() => navigate("training")}
               >
-                Open the training <ArrowRight size={19} aria-hidden="true" />
+                Open the training
               </button>
             </div>
           )}
@@ -431,7 +289,7 @@ function Preparation({
       )}
       <p className="cf-small cf-muted cf-progress-notice">
         {storageAvailable
-          ? "Your checklist, notes and native video position are saved in this tab for up to 7 days."
+          ? "Your checklist, notes and video progress are saved in this tab for up to 7 days."
           : "This browser cannot save preparation progress. Keep this page open and copy your notes before leaving."}
       </p>
       {hasProgress && (
@@ -481,7 +339,6 @@ function Experience({
   const [refreshing, setRefreshing] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
   const [bookingError, setBookingError] = useState("");
-  const [copyMessage, setCopyMessage] = useState("");
   const [applicationAttempt, setApplicationAttempt] = useState(0);
   const refreshLock = useRef(false);
   const appRef = useRef<HTMLElement>(null);
@@ -505,6 +362,10 @@ function Experience({
   const style = {
     "--cf-accent": accent,
     "--cf-accent-ink": accentText(accent),
+    "--cf-accent-text": accentForText(
+      accent,
+      config.theme.mode === "light" ? "#ffffff" : "#0b1220",
+    ),
   } as CSSProperties;
   function navigate(next: CallStage) {
     if (
@@ -589,6 +450,23 @@ function Experience({
       setRefreshing(false);
     }
   }
+  const { showcase, results } = useCallShowcase(publication.slug);
+  const portrait =
+    config.brand.hostImage && callUrl(config.brand.hostImage, true)
+      ? config.brand.hostImage
+      : "";
+  const showcaseQuotes = showcase?.testimonials ?? [];
+  const useFunnelProof =
+    selectedProof(publication).length > 0 || !showcaseQuotes.length;
+  const journeyStep =
+    stage === "alternative"
+      ? -1
+      : stage === "invitation" || stage === "application"
+        ? 0
+        : stage === "booking" &&
+            (preview || state?.booking?.status !== "booked")
+          ? 1
+          : 2;
   const cta = (
     <div className="cf-cta-group">
       <button
@@ -607,7 +485,6 @@ function Experience({
         {state
           ? "Continue to your next step"
           : config.invitation.cta || "Apply for a call"}
-        <ArrowRight size={21} aria-hidden="true" />
       </button>
       {config.invitation.ctaSubline && (
         <p className="cf-small cf-muted">{config.invitation.ctaSubline}</p>
@@ -667,34 +544,156 @@ function Experience({
         </div>
       )}
       <header className="cf-brand">
-        <span>{config.brand.name}</span>
-        <span className="cf-brand-divider" aria-hidden="true" />
-        <span className="cf-small">
-          {stage === "invitation" || stage === "application"
-            ? "A conversation about what’s next"
-            : stage === "alternative"
-              ? "Your next step"
-              : "Your call experience"}
-        </span>
+        <span className="cf-brand-name">{config.brand.name}</span>
+        {journeyStep >= 0 && (
+          <ol className="cf-journey" aria-label="Your progress">
+            {["Apply", "Book your call", "Prepare"].map((label, index) => (
+              <li
+                key={label}
+                className={
+                  index < journeyStep
+                    ? "is-done"
+                    : index === journeyStep
+                      ? "is-current"
+                      : undefined
+                }
+                aria-current={index === journeyStep ? "step" : undefined}
+              >
+                <span className="cf-journey-marker" aria-hidden="true">
+                  {index < journeyStep ? <Check size={13} /> : index + 1}
+                </span>
+                <span className="cf-journey-label">
+                  {index < journeyStep && (
+                    <span className="cf-sr-only">Done: </span>
+                  )}
+                  {label}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
       </header>
       <main ref={pageRef} className="cf-main">
         {(stage === "invitation" || stage === "application") && (
           <>
-            <section className="cf-invitation">
-              <p className="cf-eyebrow">{config.invitation.audience}</p>
-              <h1 tabIndex={-1}>{config.invitation.headline}</h1>
-              <p className="cf-lede">{config.invitation.description}</p>
-              {config.invitation.watchPrompt &&
-                (preview || !!config.invitation.video.url) && (
+            <section className={`cf-hero${portrait ? " has-portrait" : ""}`}>
+              <div className="cf-hero-copy">
+                {config.invitation.audience && (
+                  <p className="cf-kicker">{config.invitation.audience}</p>
+                )}
+                <h1 tabIndex={-1}>{config.invitation.headline}</h1>
+                {config.invitation.description && (
+                  <p className="cf-lede">{config.invitation.description}</p>
+                )}
+                {cta}
+              </div>
+              {portrait && (
+                <figure className="cf-hero-portrait">
+                  <img
+                    src={portrait}
+                    alt={
+                      config.brand.hostName
+                        ? `Portrait of ${config.brand.hostName}`
+                        : ""
+                    }
+                    width={730}
+                    height={912}
+                    fetchPriority="high"
+                  />
+                  {(config.brand.hostName || config.brand.hostRole) && (
+                    <figcaption>
+                      {config.brand.hostName && (
+                        <strong>{config.brand.hostName}</strong>
+                      )}
+                      {config.brand.hostRole && (
+                        <span>{config.brand.hostRole}</span>
+                      )}
+                    </figcaption>
+                  )}
+                </figure>
+              )}
+            </section>
+            {results.length > 0 && (
+              <div className="cf-wide">
+                <ResultsRow results={results} />
+              </div>
+            )}
+            {(preview || !!config.invitation.video.url) && (
+              <section className="cf-video-section cf-wide">
+                {config.invitation.watchPrompt && (
                   <p className="cf-watch-prompt">
                     {config.invitation.watchPrompt}
                   </p>
                 )}
-              <CallVideo
-                media={config.invitation.video}
-                title="Invitation video"
-                preview={preview}
-              />
+                <CallVideo
+                  media={config.invitation.video}
+                  title="Invitation video"
+                  preview={preview}
+                />
+              </section>
+            )}
+            {showcase?.system && <SystemSection system={showcase.system} />}
+            <div className="cf-wide">
+              {useFunnelProof ? (
+                <Proof publication={publication} preview={preview} />
+              ) : (
+                <ShowcaseQuotes
+                  heading={
+                    config.invitation.proofHeading ||
+                    "Hear from people who took the next step"
+                  }
+                  items={showcaseQuotes}
+                />
+              )}
+            </div>
+            <section className="cf-apply" ref={appRef} aria-labelledby={appId}>
+              <div className="cf-apply-layout cf-wide">
+                <div className="cf-apply-head">
+                  <h2 id={appId} tabIndex={-1} ref={headingRef}>
+                    {config.application.heading}
+                  </h2>
+                  {config.application.intro && (
+                    <p>{config.application.intro}</p>
+                  )}
+                </div>
+                <div className="cf-apply-form">
+                  {state ? (
+                    <div className="cf-application-card cf-received">
+                      <CheckCircle2 aria-hidden="true" size={36} />
+                      <h3>Your application is received</h3>
+                      <p>You can return to your next step below.</p>
+                      {cta}
+                    </div>
+                  ) : (
+                    <CallApplication
+                      key={applicationAttempt}
+                      publication={publication}
+                      preview={preview}
+                      qualificationRules={qualificationRules}
+                      onSubmit={onSubmit}
+                      onComplete={(accepted) => {
+                        setState(accepted);
+                        navigate(
+                          accepted.outcome === "qualified"
+                            ? "booking"
+                            : "alternative",
+                        );
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="cf-apply-extra">
+                  {showcase?.steps && <StepList steps={showcase.steps} />}
+                  <HostCard
+                    brand={config.brand}
+                    label="Who you’ll talk to"
+                    photo={!portrait}
+                  />
+                </div>
+              </div>
+            </section>
+            <section className="cf-closing cf-wide">
+              <h2>{config.invitation.closingHeadline}</h2>
               {config.invitation.promise && (
                 <p className="cf-promise">{config.invitation.promise}</p>
               )}
@@ -705,193 +704,24 @@ function Experience({
                 </p>
               )}
             </section>
-            <div className="cf-content-width">
-              <Proof publication={publication} preview={preview} />
-            </div>
-            <section
-              className="cf-application-band"
-              ref={appRef}
-              aria-labelledby={appId}
-            >
-              <div className="cf-application-intro">
-                <p className="cf-eyebrow">Your next step starts here</p>
-                <h2 id={appId} tabIndex={-1} ref={headingRef}>
-                  {config.application.heading}
-                </h2>
-                <p>{config.application.intro}</p>
-              </div>
-              {state ? (
-                <div className="cf-application-card cf-centered">
-                  <CheckCircle2 aria-hidden="true" size={36} />
-                  <h3>Your application is received</h3>
-                  <p>You can return to your next step below.</p>
-                  {cta}
-                </div>
-              ) : (
-                <CallApplication
-                  key={applicationAttempt}
-                  publication={publication}
-                  preview={preview}
-                  qualificationRules={qualificationRules}
-                  onSubmit={onSubmit}
-                  onComplete={(accepted) => {
-                    setState(accepted);
-                    navigate(
-                      accepted.outcome === "qualified"
-                        ? "booking"
-                        : "alternative",
-                    );
-                  }}
-                />
-              )}
-            </section>
-            {(config.brand.hostName || config.brand.hostBio) && (
-              <section className="cf-host cf-content-width">
-                {config.brand.hostImage &&
-                  callUrl(config.brand.hostImage, true) && (
-                    <img
-                      src={config.brand.hostImage}
-                      alt={config.brand.hostName}
-                      loading="lazy"
-                      width={300}
-                      height={350}
-                    />
-                  )}
-                <div>
-                  <p className="cf-eyebrow">Meet your host</p>
-                  <h2>{config.brand.hostName}</h2>
-                  {config.brand.hostRole && (
-                    <p className="cf-host-role">{config.brand.hostRole}</p>
-                  )}
-                  <p className="cf-prose">{config.brand.hostBio}</p>
-                </div>
-              </section>
-            )}
-            <section className="cf-closing cf-content-width">
-              <h2>{config.invitation.closingHeadline}</h2>
-              {cta}
-            </section>
           </>
         )}
         {stage === "booking" && (
-          <section className="cf-post-page">
-            <div className="cf-post-heading">
-              <p className="cf-eyebrow">
-                {preview
-                  ? "Booking page preview"
-                  : "Your application is received"}
-              </p>
-              <h1 tabIndex={-1}>
-                {state?.booking?.status === "booked"
-                  ? "You’re on the calendar."
-                  : state?.booking?.status === "cancelled"
-                    ? "Let’s find another time."
-                    : "Let’s make time for your next step."}
-              </h1>
-              <p>{config.booking.agenda}</p>
-            </div>
-            <div className="cf-booking-card">
-              <div className="cf-booking-icon">
-                <CalendarDays size={30} aria-hidden="true" />
-              </div>
-              <p className="cf-duration">
-                <Clock3 size={18} aria-hidden="true" /> {config.booking.minutes}
-                -minute conversation
-              </p>
-              <Appointment state={preview ? null : state} />
-              {state?.booking?.status === "booked" && !preview ? (
-                <button
-                  type="button"
-                  className="cf-button"
-                  onClick={() => navigate("preparation")}
-                >
-                  Prepare for your call{" "}
-                  <ArrowRight size={19} aria-hidden="true" />
-                </button>
-              ) : (
-                <>
-                  <h2>
-                    {state?.booking?.status === "cancelled"
-                      ? "Your previous booking was cancelled"
-                      : "Choose a time that works for you"}
-                  </h2>
-                  <p className="cf-muted">
-                    {state?.booking?.status === "cancelled"
-                      ? "Use the calendar to choose a new appointment. Your application is still here."
-                      : embedCalendly
-                        ? "Pick a time below. Your details from the application are already filled in."
-                        : "Your call is not booked yet. Complete the scheduling steps on the calendar to reserve your time. Check your calendar confirmation email for the appointment details."}
-                  </p>
-                  {embedCalendly && state ? (
-                    <CalendlyBooking
-                      url={config.booking.url}
-                      applicationId={state.id}
-                      contact={contact}
-                      accent={accent}
-                      onScheduled={(uri) => void confirmBooking(uri)}
-                    />
-                  ) : (
-                    <Destination url={config.booking.url} preview={preview}>
-                      {config.booking.label || "Open the calendar"}
-                    </Destination>
-                  )}
-                </>
-              )}
-              {!preview && state && !embedCalendly && (
-                <div className="cf-application-reference">
-                  <p>Your application reference</p>
-                  <code>{state.id}</code>
-                  <p className="cf-small cf-muted">
-                    Keep this with your booking details. If the calendar asks
-                    for an application reference, paste it there.
-                  </p>
-                  <button
-                    className="cf-text-button"
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(state.id);
-                        setCopyMessage("Application reference copied.");
-                      } catch {
-                        setCopyMessage(
-                          "Select the reference above to copy it.",
-                        );
-                      }
-                    }}
-                  >
-                    Copy reference
-                  </button>
-                  {copyMessage && (
-                    <p className="cf-small" role="status">
-                      {copyMessage}
-                    </p>
-                  )}
-                </div>
-              )}
-              {!preview && onRefreshState && (
-                <button
-                  type="button"
-                  className="cf-secondary-button cf-refresh"
-                  disabled={refreshing}
-                  onClick={() => void refresh()}
-                >
-                  {refreshing
-                    ? "Checking your booking…"
-                    : "Check booking status"}
-                </button>
-              )}
-              {bookingMessage && (
-                <p className="cf-notice" role="status">
-                  {bookingMessage}
-                </p>
-              )}
-              {bookingError && (
-                <p className="cf-error" role="alert">
-                  {bookingError}
-                </p>
-              )}
-            </div>
-          </section>
+          <BookingStage
+            publication={publication}
+            state={state}
+            preview={preview}
+            contact={contact}
+            showcase={showcase}
+            accent={accent}
+            embedCalendly={embedCalendly}
+            refreshing={refreshing}
+            bookingMessage={bookingMessage}
+            bookingError={bookingError}
+            onScheduled={(uri) => void confirmBooking(uri)}
+            onRefresh={!preview && onRefreshState ? () => void refresh() : null}
+            onPrepare={() => navigate("preparation")}
+          />
         )}
         {(stage === "preparation" || stage === "training") && (
           <Preparation
@@ -905,55 +735,37 @@ function Experience({
         {stage === "alternative" && (
           <section className="cf-alternative cf-post-page">
             <div className="cf-post-heading">
-              <p className="cf-eyebrow">A useful next step for you</p>
               <h1 tabIndex={-1}>{config.alternative.headline}</h1>
-              <p>{config.alternative.intro}</p>
+              <p className="cf-lede">{config.alternative.intro}</p>
             </div>
             <CallVideo
               media={config.alternative.video}
               title="Next-step offer video"
               preview={preview}
             />
-            <div className="cf-prose cf-alternative-story">
-              {config.alternative.story}
-            </div>
-            {config.alternative.benefits.length > 0 && (
-              <section className="cf-benefits" aria-label="What is included">
-                {config.alternative.benefits.map((benefit, i) => (
-                  <div key={i}>
-                    <span className="cf-benefit-check">
-                      <Check size={20} aria-hidden="true" />
-                    </span>
-                    <h2>{benefit.title}</h2>
-                    <p>{benefit.body}</p>
-                  </div>
-                ))}
-              </section>
-            )}
-            <Proof publication={publication} alternative preview={preview} />
-            <div className="cf-alternative-cta">
-              {config.alternative.price && (
-                <p className="cf-offer-price">{config.alternative.price}</p>
-              )}
-              {config.alternative.billing && (
-                <p className="cf-billing">{config.alternative.billing}</p>
-              )}
-              <Destination url={config.alternative.url} preview={preview}>
-                {config.alternative.cta}
-              </Destination>
-            </div>
-            {config.alternative.faq.length > 0 && (
-              <section className="cf-faq">
-                <h2>Your questions, answered</h2>
-                {config.alternative.faq.map((faq, i) => (
-                  <details key={i}>
-                    <summary>{faq.question}</summary>
-                    <p>{faq.answer}</p>
-                  </details>
-                ))}
-              </section>
-            )}
-            {config.alternative.faq.length > 0 && (
+            <div className="cf-alternative-layout">
+              <div className="cf-alternative-main">
+                {config.alternative.story && (
+                  <p className="cf-prose cf-alternative-story">
+                    {config.alternative.story}
+                  </p>
+                )}
+                {config.alternative.benefits.length > 0 && (
+                  <ul className="cf-benefits" aria-label="What is included">
+                    {config.alternative.benefits.map((benefit, i) => (
+                      <li key={i}>
+                        <span className="cf-benefit-check" aria-hidden="true">
+                          <Check size={16} />
+                        </span>
+                        <div>
+                          <h2>{benefit.title}</h2>
+                          <p>{benefit.body}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <div className="cf-alternative-cta">
                 {config.alternative.price && (
                   <p className="cf-offer-price">{config.alternative.price}</p>
@@ -961,10 +773,38 @@ function Experience({
                 {config.alternative.billing && (
                   <p className="cf-billing">{config.alternative.billing}</p>
                 )}
-                <Destination url={config.alternative.url} preview={preview}>
+                <CallDestination url={config.alternative.url} preview={preview}>
                   {config.alternative.cta}
-                </Destination>
+                </CallDestination>
               </div>
+            </div>
+            <Proof publication={publication} alternative preview={preview} />
+            {config.alternative.faq.length > 0 && (
+              <>
+                <section className="cf-faq">
+                  <h2>Your questions, answered</h2>
+                  {config.alternative.faq.map((faq, i) => (
+                    <details key={i}>
+                      <summary>{faq.question}</summary>
+                      <p>{faq.answer}</p>
+                    </details>
+                  ))}
+                </section>
+                <div className="cf-alternative-cta is-closing">
+                  {config.alternative.price && (
+                    <p className="cf-offer-price">{config.alternative.price}</p>
+                  )}
+                  {config.alternative.billing && (
+                    <p className="cf-billing">{config.alternative.billing}</p>
+                  )}
+                  <CallDestination
+                    url={config.alternative.url}
+                    preview={preview}
+                  >
+                    {config.alternative.cta}
+                  </CallDestination>
+                </div>
+              </>
             )}
           </section>
         )}

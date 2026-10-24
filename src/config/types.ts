@@ -338,8 +338,37 @@ export interface SiteConfig {
     intro: string;
     items: Array<LinkItem & { description: string; category: string }>;
   };
+  /**
+   * Optional sales sections for call funnel pages, keyed by the funnel's page
+   * address (its slug). Funnels without an entry keep the plain template.
+   */
+  callShowcases?: Record<string, CallShowcase>;
   footer: FooterConfig;
   sections: SectionVisibility;
+}
+
+/** One stage of the system an offer delivers. Stages read as a sequence. */
+export interface CallShowcaseStage {
+  title: string;
+  text: string;
+  /** What gets built at this stage, as short plain phrases. */
+  items: string[];
+}
+
+export interface CallShowcase {
+  /** Show the site's `results` row under the hero. */
+  showResults: boolean;
+  system?: {
+    heading: string;
+    intro: string;
+    stages: CallShowcaseStage[];
+    /** One closing line under the stages, such as the tools behind the work. */
+    note?: string;
+  };
+  /** What happens after someone applies, in order. */
+  steps?: Array<{ title: string; text: string }>;
+  /** Shown only when the funnel has no approved proof selected in the builder. */
+  testimonials?: Array<Testimonial & { context?: string }>;
 }
 
 export class SiteConfigError extends Error {}
@@ -363,6 +392,53 @@ const checkLink = (link: LinkItem | null, path: string, errors: string[]) => {
   if (!isNonEmpty(link.label)) errors.push(`${path}.label must not be empty`);
   if (!isValidHref(link.href))
     errors.push(`${path}.href is not a valid URL, path or mailto address`);
+};
+
+/** Keys must be call funnel page addresses; every visible string must be filled. */
+const checkCallShowcases = (
+  showcases: SiteConfig["callShowcases"],
+  errors: string[],
+) => {
+  for (const [slug, showcase] of Object.entries(showcases ?? {})) {
+    const path = `callShowcases.${slug}`;
+    if (!/^[a-z][a-z0-9-]{0,79}$/.test(slug))
+      errors.push(`${path} must be keyed by a funnel page address`);
+    const texts: Array<[unknown, string]> = [];
+    if (showcase.system) {
+      texts.push(
+        [showcase.system.heading, "system.heading"],
+        [showcase.system.intro, "system.intro"],
+      );
+      if (!showcase.system.stages.length || showcase.system.stages.length > 6)
+        errors.push(`${path}.system.stages must have 1-6 stages`);
+      showcase.system.stages.forEach((stage, i) => {
+        texts.push(
+          [stage.title, `system.stages[${i}].title`],
+          [stage.text, `system.stages[${i}].text`],
+          ...stage.items.map(
+            (item, j) =>
+              [item, `system.stages[${i}].items[${j}]`] as [unknown, string],
+          ),
+        );
+      });
+    }
+    if (showcase.steps && (!showcase.steps.length || showcase.steps.length > 5))
+      errors.push(`${path}.steps must have 1-5 steps`);
+    showcase.steps?.forEach((step, i) =>
+      texts.push(
+        [step.title, `steps[${i}].title`],
+        [step.text, `steps[${i}].text`],
+      ),
+    );
+    showcase.testimonials?.forEach((item, i) =>
+      texts.push(
+        [item.quote, `testimonials[${i}].quote`],
+        [item.attribution, `testimonials[${i}].attribution`],
+      ),
+    );
+    for (const [value, field] of texts)
+      if (!isNonEmpty(value)) errors.push(`${path}.${field} must not be empty`);
+  }
 };
 
 /**
@@ -424,6 +500,7 @@ export function validateSiteConfig(config: SiteConfig): SiteConfig {
   config.featuredResources?.items.forEach((link, i) =>
     checkLink(link, `featuredResources.items[${i}]`, errors),
   );
+  checkCallShowcases(config.callShowcases, errors);
   config.nav.items?.forEach((item, i) => {
     if ("children" in item) {
       if (!isNonEmpty(item.label))
