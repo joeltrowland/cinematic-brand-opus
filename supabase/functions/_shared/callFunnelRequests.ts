@@ -1,7 +1,9 @@
 /** Transport boundaries for the application and signed outcome endpoints. */
+import { isCalendlyInviteeUri } from "./calendlyBooking.ts";
 export type CallFunnelRequest =
   | { action: "get"; slug: string }
   | { action: "state"; token: string }
+  | { action: "calendly"; token: string; inviteeUri: string }
   | {
       action: "submit";
       slug: string;
@@ -55,6 +57,14 @@ export function parseCallFunnelRequest(raw: unknown): CallFunnelRequest {
     exact(raw, ["action", "token"]) &&
     typeof raw.token === "string" &&
     token.test(raw.token)
+  )
+    return raw as CallFunnelRequest;
+  if (
+    raw.action === "calendly" &&
+    exact(raw, ["action", "token", "inviteeUri"]) &&
+    typeof raw.token === "string" &&
+    token.test(raw.token) &&
+    isCalendlyInviteeUri(raw.inviteeUri)
   )
     return raw as CallFunnelRequest;
   if (

@@ -299,3 +299,5 @@ export const submitCallApplication = (input: CallSubmit) =>
   callApi<CallApplicationState>({ action: "submit", ...input });
 export const getCallApplicationState = (token: string) =>
   callApi<CallApplicationState>({ action: "state", token });
+export const confirmCalendlyBooking = (token: string, inviteeUri: string) =>
+  callApi<CallApplicationState>({ action: "calendly", token, inviteeUri });
