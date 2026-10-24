@@ -18,6 +18,9 @@ export function publicHelpContext(config: SiteConfig): string {
     config.sections.speaking
       ? "/speaking: Submit an event inquiry for the team to review. An inquiry is not a confirmed booking; availability, terms and pricing need a human response."
       : "",
+    ...Object.entries(config.callShowcases ?? {}).map(([slug, showcase]) =>
+      showcase.chatSummary ? `/calls/${slug}: ${showcase.chatSummary}` : "",
+    ),
     "/privacy: Read the site's privacy information and measurement choices.",
   ]
     .filter(Boolean)

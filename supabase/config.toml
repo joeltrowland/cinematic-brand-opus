@@ -139,3 +139,6 @@ verify_jwt = false
 
 [functions.call-funnel-events]
 verify_jwt = false
+
+[functions.call-funnel-mail]
+verify_jwt = false

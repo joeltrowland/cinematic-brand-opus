@@ -1,5 +1,9 @@
 /** Calendly inline embed helpers: prefill, booking tag and frame messages. */
-import type { CallContact } from "../../../supabase/functions/_shared/callFunnels";
+import {
+  callAnswerLines,
+  type CallContact,
+  type CallFunnelConfig,
+} from "../../../supabase/functions/_shared/callFunnels";
 
 const CALENDLY_ORIGIN = "https://calendly.com";
 
@@ -24,6 +28,8 @@ export function calendlyEmbedUrl(
     contact: CallContact | null;
     embedDomain: string;
     accent?: string;
+    /** Prefills Calendly's first custom question, when the event has one. */
+    notes?: string;
   },
 ): string {
   const embed = new URL(url);
@@ -38,6 +44,7 @@ export function calendlyEmbedUrl(
     embed.searchParams.set("name", options.contact.name);
   if (options.contact?.email)
     embed.searchParams.set("email", options.contact.email);
+  if (options.notes) embed.searchParams.set("a1", options.notes);
   if (options.accent && /^#[a-f0-9]{6}$/i.test(options.accent))
     embed.searchParams.set("primary_color", options.accent.slice(1));
   return embed.toString();
@@ -67,4 +74,15 @@ export function scheduledInviteeUri(message: MessageEvent): string | null {
   if (!data || data.event !== "calendly.event_scheduled") return null;
   const uri = data.payload?.invitee?.uri;
   return typeof uri === "string" ? uri : null;
+}
+
+/** The application's answers as plain lines for the host's calendar invite. */
+export function callBookingNotes(
+  config: Pick<CallFunnelConfig, "questions">,
+  answers: Record<string, string>,
+): string {
+  return callAnswerLines(config, answers)
+    .map(([label, value]) => `${label}: ${value.replace(/\s+/g, " ")}`)
+    .join("\n")
+    .slice(0, 1500);
 }

@@ -8,6 +8,7 @@ import {
   type CallSubmit,
 } from "@/lib/callFunnelsClient";
 import { newFunnelToken } from "@/lib/funnelJourneysClient";
+import { callBookingNotes } from "@/components/call-funnels/calendlyEmbed";
 import type {
   CallAnswers,
   CallApplicationState,
@@ -49,6 +50,10 @@ function CallSession({ publication }: { publication: CallPublication }) {
   // Same-tab only: lets the calendar prefill the applicant and re-check their booking.
   const contactKey = `call-contact:${publication.id}`;
   const bookingKey = `call-booking:${publication.id}`;
+  const notesKey = `call-notes:${publication.id}`;
+  const [bookingNotes, setBookingNotes] = useState<string>(
+    () => readSession<string>(notesKey) ?? "",
+  );
   const [contact, setContact] = useState<CallContact | null>(() =>
     readSession<CallContact>(contactKey),
   );
@@ -116,6 +121,10 @@ function CallSession({ publication }: { publication: CallPublication }) {
     const submitted = { name: contact.name, email: contact.email };
     setContact(submitted);
     writeSession(contactKey, submitted);
+    // The answers travel into the calendar invite so the host is briefed.
+    const notes = callBookingNotes(publication.config, answers);
+    setBookingNotes(notes);
+    writeSession(notesKey, notes);
     if (!token.current) {
       token.current = newFunnelToken();
       try {
@@ -232,6 +241,7 @@ function CallSession({ publication }: { publication: CallPublication }) {
           onSubmit={submit}
           onRefreshState={refresh}
           contact={contact}
+          bookingNotes={bookingNotes}
           onCalendlyBooked={calendlyBooked}
         />
       </div>

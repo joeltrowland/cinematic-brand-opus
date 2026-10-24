@@ -74,6 +74,7 @@ export const brianPreset: SiteConfig = {
       { label: "Shop", href: "/shop" },
       { label: "About Brian", href: "/about" },
       { label: "Speaking", href: "/speaking" },
+      { label: "Work with Brian", href: "/calls/work-with-brian" },
     ],
     hashLinks: [],
     routeLinks: [],
@@ -320,6 +321,8 @@ export const brianPreset: SiteConfig = {
     // The agency and consulting application. Stages mirror the application's
     // "Where do you want help first?" answers, so both pages use one language.
     "work-with-brian": {
+      chatSummary:
+        "Apply for done-for-you A.I. builds or consulting: websites, funnels, landing pages, lead magnets, ad management, chatbots, A.I. voice agents, follow-up and automations. Projects start at $5,000. Qualified applicants book a 30-minute strategy call on the next page",
       showResults: true,
       system: {
         heading: "One team builds your whole system",
@@ -383,6 +386,7 @@ export const brianPreset: SiteConfig = {
       { label: "Your First AI Build", href: "/first-ai-build" },
       { label: "Shop", href: "/shop" },
       { label: "Speaking", href: "/speaking" },
+      { label: "Work with Brian", href: "/calls/work-with-brian" },
       { label: "Blog", href: "/blog" },
       { label: "News", href: "/news" },
       { label: "Resources", href: "/resources" },

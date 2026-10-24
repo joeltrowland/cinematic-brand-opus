@@ -114,6 +114,7 @@ export type BookingStageProps = {
   state: CallApplicationState | null;
   preview: boolean;
   contact: CallContact | null;
+  bookingNotes: string;
   showcase: CallShowcase | null;
   accent: string;
   embedCalendly: boolean;
@@ -130,6 +131,7 @@ export function BookingStage({
   state,
   preview,
   contact,
+  bookingNotes,
   showcase,
   accent,
   embedCalendly,
@@ -243,6 +245,7 @@ export function BookingStage({
                 applicationId={state.id}
                 contact={contact}
                 accent={accent}
+                notes={bookingNotes}
                 onScheduled={onScheduled}
               />
             ) : (
