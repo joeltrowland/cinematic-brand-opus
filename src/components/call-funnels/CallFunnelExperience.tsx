@@ -10,9 +10,12 @@ import {
 import {
   callUrl,
   type CallApplicationState,
+  type CallContact,
   type CallFunnelConfig,
   type CallPublication,
 } from "../../../supabase/functions/_shared/callFunnels";
+import CalendlyBooking from "./CalendlyBooking";
+import { isCalendlyUrl } from "./calendlyEmbed";
 import CallApplication, { type CallSubmit } from "./CallApplication";
 import CallVideo from "./CallVideo";
 import CallPreparationExtras from "./CallPreparationExtras";
@@ -34,6 +37,9 @@ export type CallFunnelExperienceProps = {
   initialState?: CallApplicationState | null;
   onRefreshState?: () => Promise<CallApplicationState>;
   onViewStage?: (stage: CallStage) => void;
+  /** Applicant details carried into an embedded calendar so nothing is typed twice. */
+  contact?: CallContact | null;
+  onCalendlyBooked?: (inviteeUri: string) => Promise<CallApplicationState>;
 };
 
 function accentText(hex: string) {
@@ -165,6 +171,8 @@ function Appointment({ state }: { state: CallApplicationState | null }) {
   const booking = state?.booking;
   if (booking?.status !== "booked") return null;
   let date = "Your scheduled time will be provided by your host.";
+  // Stored times are UTC; a UTC label reads as wrong to visitors, so use their own zone.
+  const zone = booking.timezone === "UTC" ? undefined : booking.timezone;
   if (booking.startsAt && Number.isFinite(Date.parse(booking.startsAt))) {
     const instant = new Date(booking.startsAt);
     try {
@@ -172,11 +180,8 @@ function Appointment({ state }: { state: CallApplicationState | null }) {
         new Intl.DateTimeFormat(undefined, {
           dateStyle: "full",
           timeStyle: "short",
-          ...(booking.timezone ? { timeZone: booking.timezone } : {}),
-        }).format(instant) +
-        (booking.timezone
-          ? ` (${booking.timezone})`
-          : " (your device’s time zone)");
+          ...(zone ? { timeZone: zone } : {}),
+        }).format(instant) + (zone ? ` (${zone})` : "");
     } catch {
       date = `${instant.toLocaleString()} (your device’s time zone)`;
     }
@@ -359,15 +364,17 @@ function Preparation({
             extras={config.preparation.extras}
             preview={preview}
           />
-          <div className="cf-centered">
-            <button
-              className="cf-button"
-              type="button"
-              onClick={() => navigate("training")}
-            >
-              Open the training <ArrowRight size={19} aria-hidden="true" />
-            </button>
-          </div>
+          {(preview || !!config.training.video.url) && (
+            <div className="cf-centered">
+              <button
+                className="cf-button"
+                type="button"
+                onClick={() => navigate("training")}
+              >
+                Open the training <ArrowRight size={19} aria-hidden="true" />
+              </button>
+            </div>
+          )}
           {!!config.preparation.extras?.proofIds.length && (
             <Proof
               publication={publication}
@@ -459,6 +466,8 @@ function Experience({
   initialState = null,
   onRefreshState,
   onViewStage,
+  contact = null,
+  onCalendlyBooked,
 }: CallFunnelExperienceProps) {
   const { config } = publication;
   const [state, setState] = useState(initialState);
@@ -517,6 +526,37 @@ function Experience({
           ?.focus({ preventScroll: true });
       }
     });
+  }
+  const embedCalendly =
+    !preview &&
+    !!state &&
+    !!onCalendlyBooked &&
+    isCalendlyUrl(config.booking.url);
+  async function confirmBooking(inviteeUri: string) {
+    // Never drop a booking because a status check is running; confirmation is idempotent.
+    if (!onCalendlyBooked) return;
+    refreshLock.current = true;
+    setRefreshing(true);
+    setBookingError("");
+    setBookingMessage("Confirming your booking…");
+    try {
+      const updated = await onCalendlyBooked(inviteeUri);
+      setState(updated);
+      setBookingMessage("");
+      requestAnimationFrame(() =>
+        pageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+    } catch (cause) {
+      setBookingMessage("");
+      setBookingError(
+        cause instanceof Error
+          ? cause.message
+          : "Your time is reserved with Calendly. Check your email for the details.",
+      );
+    } finally {
+      refreshLock.current = false;
+      setRefreshing(false);
+    }
   }
   async function refresh() {
     if (!onRefreshState || refreshLock.current) return;
@@ -644,11 +684,12 @@ function Experience({
               <p className="cf-eyebrow">{config.invitation.audience}</p>
               <h1 tabIndex={-1}>{config.invitation.headline}</h1>
               <p className="cf-lede">{config.invitation.description}</p>
-              {config.invitation.watchPrompt && (
-                <p className="cf-watch-prompt">
-                  {config.invitation.watchPrompt}
-                </p>
-              )}
+              {config.invitation.watchPrompt &&
+                (preview || !!config.invitation.video.url) && (
+                  <p className="cf-watch-prompt">
+                    {config.invitation.watchPrompt}
+                  </p>
+                )}
               <CallVideo
                 media={config.invitation.video}
                 title="Invitation video"
@@ -777,14 +818,26 @@ function Experience({
                   <p className="cf-muted">
                     {state?.booking?.status === "cancelled"
                       ? "Use the calendar to choose a new appointment. Your application is still here."
-                      : "Your call is not booked yet. Complete the scheduling steps on the calendar to reserve your time. Check your calendar confirmation email for the appointment details."}
+                      : embedCalendly
+                        ? "Pick a time below. Your details from the application are already filled in."
+                        : "Your call is not booked yet. Complete the scheduling steps on the calendar to reserve your time. Check your calendar confirmation email for the appointment details."}
                   </p>
-                  <Destination url={config.booking.url} preview={preview}>
-                    {config.booking.label || "Open the calendar"}
-                  </Destination>
+                  {embedCalendly && state ? (
+                    <CalendlyBooking
+                      url={config.booking.url}
+                      applicationId={state.id}
+                      contact={contact}
+                      accent={accent}
+                      onScheduled={(uri) => void confirmBooking(uri)}
+                    />
+                  ) : (
+                    <Destination url={config.booking.url} preview={preview}>
+                      {config.booking.label || "Open the calendar"}
+                    </Destination>
+                  )}
                 </>
               )}
-              {!preview && state && (
+              {!preview && state && !embedCalendly && (
                 <div className="cf-application-reference">
                   <p>Your application reference</p>
                   <code>{state.id}</code>

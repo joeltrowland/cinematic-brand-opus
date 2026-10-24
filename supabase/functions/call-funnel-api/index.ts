@@ -1,4 +1,5 @@
 import { readBoundedJson } from "../_shared/boundedJson.ts";
+import { calendlyGatewayFetch } from "../_shared/calendlyBooking.ts";
 import { parseCallFunnelRequest } from "../_shared/callFunnelRequests.ts";
 import { runCallFunnelRequest } from "../_shared/callFunnelRuntime.ts";
 import { hashOfferToken, OfferError } from "../_shared/offers.ts";
@@ -33,11 +34,17 @@ Deno.serve(async (request) => {
     await offerThrottle(
       database,
       `call-funnel:${body.action}:${await hashOfferToken(ip)}`,
-      body.action === "submit" ? 20 : 240,
+      body.action === "submit" ? 20 : body.action === "calendly" ? 30 : 240,
     );
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY")?.trim() ?? "";
+    const calendlyKey = Deno.env.get("CALENDLY_API_KEY")?.trim() ?? "";
+    const calendly =
+      lovableKey && calendlyKey
+        ? calendlyGatewayFetch(lovableKey, calendlyKey)
+        : null;
     return offerJson(
       200,
-      await runCallFunnelRequest(body, database, hashOfferToken),
+      await runCallFunnelRequest(body, database, hashOfferToken, calendly),
     );
   } catch (error) {
     return offerFailure(error);

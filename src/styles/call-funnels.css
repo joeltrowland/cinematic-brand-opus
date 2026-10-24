@@ -741,6 +741,14 @@ html[data-site-theme="light"] .call-funnel[data-cf-theme="site"] {
 .call-funnel .cf-booking-card > .cf-small {
   margin-top: 12px;
 }
+.call-funnel .cf-calendly {
+  display: block;
+  width: 100%;
+  height: 720px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+}
 .call-funnel .cf-refresh {
   display: flex;
   margin: 20px auto 0;

@@ -1,4 +1,8 @@
 import { OfferError } from "./offers.ts";
+import {
+  calendlyBookingEvents,
+  type CalendlyFetch,
+} from "./calendlyBooking.ts";
 import type {
   CallFunnelRequest,
   CallWebhookEvent,
@@ -50,7 +54,10 @@ export async function runCallFunnelRequest(
   body: CallFunnelRequest,
   database: CallFunnelDatabase,
   hashToken: (token: string) => Promise<string>,
+  calendly?: CalendlyFetch | null,
 ): Promise<unknown> {
+  if (body.action === "calendly")
+    return confirmCalendlyBooking(body, database, hashToken, calendly);
   let name: string;
   let args: Record<string, unknown>;
   if (body.action === "get") {
@@ -84,6 +91,61 @@ export async function runCallFunnelRequest(
       "This application is not currently available.",
     );
   return data;
+}
+async function applicationView(
+  database: CallFunnelDatabase,
+  tokenHash: string,
+): Promise<{ id: string; outcome: string }> {
+  const { data, error } = await database.rpc("call_funnel_application_view", {
+    _token_hash: tokenHash,
+  });
+  if (error) throw callFunnelDatabaseError(error);
+  if (!data)
+    throw new OfferError(
+      404,
+      "unavailable",
+      "This application is not currently available.",
+    );
+  return data as { id: string; outcome: string };
+}
+/** The browser only reports which booking it made; Calendly confirms the details. */
+async function confirmCalendlyBooking(
+  body: Extract<CallFunnelRequest, { action: "calendly" }>,
+  database: CallFunnelDatabase,
+  hashToken: (token: string) => Promise<string>,
+  calendly?: CalendlyFetch | null,
+): Promise<unknown> {
+  if (!calendly)
+    throw new OfferError(
+      503,
+      "not_configured",
+      "Booking confirmation is not configured. Your Calendly confirmation email has your call details.",
+    );
+  const tokenHash = await hashToken(body.token);
+  const view = await applicationView(database, tokenHash);
+  if (view.outcome !== "qualified")
+    throw new OfferError(
+      400,
+      "invalid_request",
+      "This application is not on the booking path.",
+    );
+  let events: CallWebhookEvent[];
+  try {
+    events = await calendlyBookingEvents(view.id, body.inviteeUri, calendly);
+  } catch (error) {
+    const foreign =
+      error instanceof Error &&
+      /another application|Invalid/.test(error.message);
+    throw new OfferError(
+      foreign ? 400 : 503,
+      foreign ? "invalid_request" : "unavailable",
+      foreign
+        ? "That booking could not be matched to this application."
+        : "Your booking is saved with Calendly, but we could not confirm it here yet. Please check again in a moment.",
+    );
+  }
+  for (const event of events) await runCallWebhookEvent(event, database);
+  return applicationView(database, tokenHash);
 }
 export async function runCallWebhookEvent(
   event: CallWebhookEvent,

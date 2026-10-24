@@ -58,6 +58,8 @@ export default function CallVideo({
     setResumed(true);
     ref.current.focus();
   }
+  // Visitors never see an empty "coming soon" frame; the builder preview still shows the slot.
+  if (!preview && !media.url) return null;
   const timestamp = (seconds: number) =>
     `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
   return (

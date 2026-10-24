@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import CallFunnelExperience from "@/components/call-funnels/CallFunnelExperience";
 import {
   CallApiError,
+  confirmCalendlyBooking,
   getCallApplicationState,
   submitCallApplication,
   type CallSubmit,
@@ -45,6 +46,12 @@ function CallSession({ publication }: { publication: CallPublication }) {
   const token = useRef("");
   const pending = useRef<CallSubmit | null>(null);
   const storageKey = `call-access:${publication.id}`;
+  // Same-tab only: lets the calendar prefill the applicant and re-check their booking.
+  const contactKey = `call-contact:${publication.id}`;
+  const bookingKey = `call-booking:${publication.id}`;
+  const [contact, setContact] = useState<CallContact | null>(() =>
+    readSession<CallContact>(contactKey),
+  );
   useEffect(() => {
     let active = true;
     let cached = "";
@@ -106,6 +113,9 @@ function CallSession({ publication }: { publication: CallPublication }) {
       throw new Error(
         "Please agree to contact about this application before continuing.",
       );
+    const submitted = { name: contact.name, email: contact.email };
+    setContact(submitted);
+    writeSession(contactKey, submitted);
     if (!token.current) {
       token.current = newFunnelToken();
       try {
@@ -142,7 +152,16 @@ function CallSession({ publication }: { publication: CallPublication }) {
     }
   }
   async function refresh() {
-    return accept(await getCallApplicationState(token.current));
+    const invitee = readSession<string>(bookingKey);
+    return accept(
+      invitee
+        ? await confirmCalendlyBooking(token.current, invitee)
+        : await getCallApplicationState(token.current),
+    );
+  }
+  async function calendlyBooked(inviteeUri: string) {
+    writeSession(bookingKey, inviteeUri);
+    return accept(await confirmCalendlyBooking(token.current, inviteeUri));
   }
   async function recover(retry: boolean) {
     if (busy) return;
@@ -212,8 +231,26 @@ function CallSession({ publication }: { publication: CallPublication }) {
           initialState={state}
           onSubmit={submit}
           onRefreshState={refresh}
+          contact={contact}
+          onCalendlyBooked={calendlyBooked}
         />
       </div>
     </>
   );
+}
+
+function readSession<T>(key: string): T | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+function writeSession(key: string, value: unknown) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* the page still works without saved details */
+  }
 }
