@@ -191,7 +191,7 @@ describe("Video + Application visitor flow", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Let’s make time for your next step.",
+          name: "Pick a time for your call",
         }),
       ).toBeTruthy(),
     );
@@ -326,7 +326,7 @@ describe("Video + Application visitor flow", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Let’s make time for your next step.",
+          name: "Pick a time for your call",
         }),
       ).toBeTruthy(),
     );
@@ -378,7 +378,7 @@ describe("Video + Application visitor flow", () => {
     await waitFor(() =>
       expect(
         screen.getByRole("heading", {
-          name: "Let’s make time for your next step.",
+          name: "Pick a time for your call",
         }),
       ).toBeTruthy(),
     );
@@ -480,9 +480,10 @@ describe("Video + Application visitor flow", () => {
       />,
     );
     expect(
-      screen.getByRole("heading", {
-        name: "Your previous booking was cancelled",
-      }),
+      screen.getByRole("heading", { name: "Let’s find another time" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Your previous booking was cancelled/),
     ).toBeTruthy();
     expect(screen.queryByText("Your call is booked")).toBeNull();
     expect(

@@ -2,6 +2,7 @@ import type { SiteConfig } from "../types";
 import { summitHref } from "../../lib/summitLink";
 import {
   brianAboutTestimonials,
+  brianCallTestimonials,
   brianHomepageTestimonials,
   brianSpeakingTestimonials,
 } from "./brianTestimonials";
@@ -313,6 +314,65 @@ export const brianPreset: SiteConfig = {
         category: "Sales & service",
       },
     ],
+  },
+
+  callShowcases: {
+    // The agency and consulting application. Stages mirror the application's
+    // "Where do you want help first?" answers, so both pages use one language.
+    "work-with-brian": {
+      showResults: true,
+      system: {
+        heading: "One team builds your whole system",
+        intro:
+          "Most businesses have a few of the pieces and nothing connecting them. We build each stage and wire them together, so someone who clicks an ad ends up on your calendar or buying",
+        stages: [
+          {
+            title: "Get found",
+            text: "Bring the right people to your door",
+            items: [
+              "Ad campaigns and management",
+              "Lead magnets",
+              "Landing pages",
+            ],
+          },
+          {
+            title: "Turn leads into sales",
+            text: "Make your offer clear and easy to say yes to",
+            items: ["Sales funnels", "Websites", "Copywriting"],
+          },
+          {
+            title: "Follow up fast",
+            text: "Answer every lead in seconds, day or night",
+            items: [
+              "Email and SMS follow-up",
+              "Website chatbots",
+              "AI voice agents",
+            ],
+          },
+          {
+            title: "Run on autopilot",
+            text: "Take the busywork off your plate",
+            items: ["Workflow automations", "Custom apps and tools"],
+          },
+        ],
+        note: "Built with the tools Brian uses every day: Lovable, Claude Code, Codex and Grok Bots. Want advice instead of a build? Consulting is available too",
+      },
+      steps: [
+        {
+          title: "Apply",
+          text: "Answer a few questions about your business. It takes about 3 minutes",
+        },
+        {
+          title: "Pick a time",
+          text: "If we're a fit, you book a 30-minute call on the next page",
+        },
+        {
+          title: "Get your plan",
+          text: "We map what to build first and walk you through scope, timeline and investment",
+        },
+      ],
+      testimonials: brianCallTestimonials,
+    },
   },
 
   footer: {

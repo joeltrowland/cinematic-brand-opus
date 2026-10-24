@@ -1,11 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  RotateCcw,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowLeft, Check, RotateCcw, ShieldCheck } from "lucide-react";
 import {
   callAnswerError,
   callUrl,
@@ -17,6 +11,7 @@ import {
   type CallContact,
   type CallFunnelConfig,
   type CallPublication,
+  type CallQuestion,
 } from "../../../supabase/functions/_shared/callFunnels";
 import {
   type ApplicationDraft,
@@ -25,6 +20,24 @@ import {
   removeCallDraft,
   saveCallDraft,
 } from "./callFunnelDraft";
+
+/** Phone and link questions get the right mobile keyboard and autofill. */
+function textInputHints(question: CallQuestion) {
+  const key = `${question.id} ${question.label}`.toLowerCase();
+  if (/phone|mobile|\btel\b/.test(key))
+    return { type: "tel", inputMode: "tel", autoComplete: "tel" } as const;
+  if (/website|\burl\b|link/.test(key))
+    return { type: "text", inputMode: "url", autoComplete: "url" } as const;
+  return { type: "text" } as const;
+}
+
+/** Short answer lists sit in two columns so the whole step fits on screen. */
+function gridChoices(question: CallQuestion) {
+  return (
+    question.options.length >= 4 &&
+    question.options.every((option) => option.label.length <= 32)
+  );
+}
 
 export type CallSubmit = (
   answers: CallAnswers,
@@ -60,6 +73,7 @@ export default function CallApplication({
   const [storageAvailable, setStorageAvailable] = useState(true);
   const sending = useRef(false);
   const stepHeading = useRef<HTMLHeadingElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const shouldFocus = useRef(false);
   const visible = visibleCallQuestions(config, answers);
   const steps = [
@@ -83,6 +97,23 @@ export default function CallApplication({
     if (shouldFocus.current) {
       stepHeading.current?.focus({ preventScroll: true });
       shouldFocus.current = false;
+      // Bring the next step fully into view: its top may have scrolled away,
+      // or (on phones) the heading above the card pushes answers off screen.
+      const card = cardRef.current;
+      const box = card?.getBoundingClientRect();
+      if (
+        card &&
+        box &&
+        (box.top < 0 || (box.bottom > window.innerHeight && box.top > 24))
+      ) {
+        const reduce = window.matchMedia?.(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        card.scrollIntoView?.({
+          block: "start",
+          behavior: reduce ? "auto" : "smooth",
+        });
+      }
     }
   }, [step]);
 
@@ -190,13 +221,7 @@ export default function CallApplication({
   }
 
   return (
-    <div className="cf-application-card">
-      <p className="cf-storage-notice">
-        <ShieldCheck size={16} aria-hidden="true" />
-        {storageAvailable
-          ? "Unfinished answers are saved in this tab for up to 7 days. Your contact details and consent are not saved on this device."
-          : "This browser cannot save unfinished answers. Keep this page open until you submit."}
-      </p>
+    <div className="cf-application-card" ref={cardRef}>
       {recovered ? (
         <div className="cf-recovery" role="status">
           <h3 ref={stepHeading} tabIndex={-1}>
@@ -225,8 +250,7 @@ export default function CallApplication({
                 );
               }}
             >
-              Continue saved application{" "}
-              <ArrowRight size={18} aria-hidden="true" />
+              Continue saved application
             </button>
             <button type="button" className="cf-text-button" onClick={reset}>
               Start fresh
@@ -284,7 +308,7 @@ export default function CallApplication({
                 )}
                 {question.type === "single" ? (
                   <div
-                    className="cf-choices"
+                    className={`cf-choices${gridChoices(question) ? " is-grid" : ""}`}
                     role="radiogroup"
                     aria-labelledby={`${uid}-question`}
                     aria-describedby={
@@ -360,7 +384,7 @@ export default function CallApplication({
                     }
                     aria-invalid={!!error}
                     required={question.required}
-                    type="text"
+                    {...textInputHints(question)}
                     value={answers[question.id] || ""}
                     maxLength={2000}
                     onChange={(event) => {
@@ -521,7 +545,6 @@ export default function CallApplication({
                       ? "Test application route"
                       : "Send my application"
                     : "Continue"}
-                <ArrowRight size={18} aria-hidden="true" />
               </button>
             </div>
             {Object.keys(answers).length > 0 && (
@@ -542,6 +565,12 @@ export default function CallApplication({
           )}
         </form>
       )}
+      <p className="cf-storage-notice">
+        <ShieldCheck size={15} aria-hidden="true" />
+        {storageAvailable
+          ? "Unfinished answers are saved in this tab for up to 7 days. Your contact details and consent are not saved on this device."
+          : "This browser cannot save unfinished answers. Keep this page open until you submit."}
+      </p>
     </div>
   );
 }

@@ -48,6 +48,26 @@ const lisaSba: TestimonialItem = {
   context: APP_WORKSHOP_MARCH,
 };
 
+/** Steve's app line leads the agency application page. */
+const steveApp: TestimonialItem = {
+  quote:
+    "@BrianHanson built me an Accountability App for Network Marketers that was Absolutely Brilliant... in about 30 mins!",
+  attribution: "Steve Cunningham",
+  context: "App-building feedback · January 2026",
+};
+
+const ebTalkToHim: TestimonialItem = {
+  quote:
+    "Brian is just giving out GOLD! To me, the tips he's giving has taken a long time to gather. If you are on the fence, talk to him.",
+  attribution: "E B Soloway",
+  context: "Training feedback · May 2026",
+};
+
+const jessicaWhisperer: TestimonialItem = {
+  quote: "Brian is the Lovable Whisperer",
+  attribution: "Jessica Farrone",
+};
+
 /**
  * Homepage section. `groups` lead, then the wall. The six earlier quotes in
  * `items` stay, unchanged, in the collapsed "More from the community" list.
@@ -158,10 +178,7 @@ export const brianHomepageTestimonials: NonNullable<
   wall: {
     label: "The short version",
     items: [
-      {
-        quote: "Brian is the Lovable Whisperer",
-        attribution: "Jessica Farrone",
-      },
+      jessicaWhisperer,
       {
         quote: "BRIAN is AI4B biggest Motivator and Energy",
         attribution: "Heiko Katins",
@@ -193,18 +210,8 @@ export const brianHomepageTestimonials: NonNullable<
     ],
   },
   items: [
-    {
-      quote:
-        "@BrianHanson built me an Accountability App for Network Marketers that was Absolutely Brilliant... in about 30 mins!",
-      attribution: "Steve Cunningham",
-      context: "App-building feedback · January 2026",
-    },
-    {
-      quote:
-        "Brian is just giving out GOLD! To me, the tips he's giving has taken a long time to gather. If you are on the fence, talk to him.",
-      attribution: "E B Soloway",
-      context: "Training feedback · May 2026",
-    },
+    steveApp,
+    ebTalkToHim,
     {
       quote:
         "I have Brian's mindset now - I use to think I wanted to create everything from scratch. Nah - technology is moving so fast. I am the queen of leverage, modify, accentuate, customized. No longer want to reinvent the wheel. I am able to move faster and still put my spin on things and it is curated.",
@@ -271,3 +278,15 @@ export const brianSpeakingTestimonials: SpeakingTestimonialsConfig = {
   label: "From my workshops",
   items: [randiHeart, lisaSba],
 };
+
+/**
+ * The agency application page (/calls/work-with-brian). These speak to
+ * Brian's building and advice, so they carry no income claim and need no
+ * results disclosure.
+ */
+export const brianCallTestimonials: TestimonialItem[] = [
+  steveApp,
+  jessicaWhisperer,
+  lisaSba,
+  ebTalkToHim,
+];
