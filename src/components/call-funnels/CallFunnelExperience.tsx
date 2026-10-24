@@ -41,6 +41,8 @@ export type CallFunnelExperienceProps = {
   onViewStage?: (stage: CallStage) => void;
   /** Applicant details carried into an embedded calendar so nothing is typed twice. */
   contact?: CallContact | null;
+  /** The application's answers, carried into the calendar invite. */
+  bookingNotes?: string;
   onCalendlyBooked?: (inviteeUri: string) => Promise<CallApplicationState>;
 };
 
@@ -325,6 +327,7 @@ function Experience({
   onRefreshState,
   onViewStage,
   contact = null,
+  bookingNotes = "",
   onCalendlyBooked,
 }: CallFunnelExperienceProps) {
   const { config } = publication;
@@ -712,6 +715,7 @@ function Experience({
             state={state}
             preview={preview}
             contact={contact}
+            bookingNotes={bookingNotes}
             showcase={showcase}
             accent={accent}
             embedCalendly={embedCalendly}

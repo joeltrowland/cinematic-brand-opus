@@ -356,6 +356,8 @@ export interface CallShowcaseStage {
 }
 
 export interface CallShowcase {
+  /** What the site chatbot says this page is for, so it can send people there. */
+  chatSummary?: string;
   /** Show the site's `results` row under the hero. */
   showResults: boolean;
   system?: {
@@ -404,6 +406,8 @@ const checkCallShowcases = (
     if (!/^[a-z][a-z0-9-]{0,79}$/.test(slug))
       errors.push(`${path} must be keyed by a funnel page address`);
     const texts: Array<[unknown, string]> = [];
+    if (showcase.chatSummary !== undefined)
+      texts.push([showcase.chatSummary, "chatSummary"]);
     if (showcase.system) {
       texts.push(
         [showcase.system.heading, "system.heading"],

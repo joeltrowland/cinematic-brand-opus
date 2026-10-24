@@ -11,12 +11,14 @@ export default function CalendlyBooking({
   applicationId,
   contact,
   accent,
+  notes,
   onScheduled,
 }: {
   url: string;
   applicationId: string;
   contact: CallContact | null;
   accent?: string;
+  notes?: string;
   onScheduled: (inviteeUri: string) => void;
 }) {
   const handler = useRef(onScheduled);
@@ -38,6 +40,7 @@ export default function CalendlyBooking({
     applicationId,
     contact,
     accent,
+    notes,
     embedDomain:
       typeof window === "undefined"
         ? "brianhanson.com"

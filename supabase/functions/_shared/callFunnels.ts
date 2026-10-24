@@ -696,6 +696,21 @@ export function publicCallConfig(c: CallFunnelConfig): PublicCallConfig {
   const { scripts: _scripts, qualificationRules: _rules, ...safe } = c;
   return safe;
 }
+/** Every answered question, in order, with choice IDs shown as their labels. */
+export function callAnswerLines(
+  config: Pick<CallFunnelConfig, "questions">,
+  answers: Record<string, string>,
+): [string, string][] {
+  return config.questions.flatMap((question) => {
+    const raw = answers[question.id]?.trim();
+    if (!raw) return [];
+    const value =
+      question.type === "single"
+        ? question.options.find((option) => option.id === raw)?.label
+        : raw;
+    return value ? [[question.label, value] as [string, string]] : [];
+  });
+}
 export function visibleCallQuestions(
   config: Pick<CallFunnelConfig, "questions">,
   answers: CallAnswers,
