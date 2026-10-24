@@ -47,9 +47,11 @@ export type Database = {
           consent: boolean
           contact: Json
           expires_at: string
+          followup_sent_at: string | null
           funnel_id: string
           id: string
           outcome: string
+          owner_alerted_at: string | null
           request_id: string
           retain_until: string
           revision: number
@@ -61,9 +63,11 @@ export type Database = {
           consent: boolean
           contact: Json
           expires_at?: string
+          followup_sent_at?: string | null
           funnel_id: string
           id?: string
           outcome: string
+          owner_alerted_at?: string | null
           request_id: string
           retain_until?: string
           revision: number
@@ -75,9 +79,11 @@ export type Database = {
           consent?: boolean
           contact?: Json
           expires_at?: string
+          followup_sent_at?: string | null
           funnel_id?: string
           id?: string
           outcome?: string
+          owner_alerted_at?: string | null
           request_id?: string
           retain_until?: string
           revision?: number
