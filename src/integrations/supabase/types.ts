@@ -50,6 +50,7 @@ export type Database = {
           followup_sent_at: string | null
           funnel_id: string
           id: string
+          marketing_consent: boolean
           outcome: string
           owner_alerted_at: string | null
           request_id: string
@@ -66,6 +67,7 @@ export type Database = {
           followup_sent_at?: string | null
           funnel_id: string
           id?: string
+          marketing_consent?: boolean
           outcome: string
           owner_alerted_at?: string | null
           request_id: string
@@ -82,6 +84,7 @@ export type Database = {
           followup_sent_at?: string | null
           funnel_id?: string
           id?: string
+          marketing_consent?: boolean
           outcome?: string
           owner_alerted_at?: string | null
           request_id?: string
@@ -3865,18 +3868,32 @@ export type Database = {
         Args: { fields: string[]; v: Json }
         Returns: boolean
       }
-      call_funnel_submit: {
-        Args: {
-          _answers: Json
-          _consent: boolean
-          _contact: Json
-          _request_id: string
-          _revision: number
-          _slug: string
-          _token_hash: string
-        }
-        Returns: Json
-      }
+      call_funnel_submit:
+        | {
+            Args: {
+              _answers: Json
+              _consent: boolean
+              _contact: Json
+              _request_id: string
+              _revision: number
+              _slug: string
+              _token_hash: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _answers: Json
+              _consent: boolean
+              _contact: Json
+              _marketing: boolean
+              _request_id: string
+              _revision: number
+              _slug: string
+              _token_hash: string
+            }
+            Returns: Json
+          }
       call_funnel_text: {
         Args: { maximum: number; required?: boolean; v: Json }
         Returns: boolean
