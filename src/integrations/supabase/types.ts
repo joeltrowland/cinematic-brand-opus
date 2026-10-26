@@ -153,6 +153,56 @@ export type Database = {
           },
         ]
       }
+      call_funnel_partials: {
+        Row: {
+          answers: Json
+          contact: Json
+          created_at: string
+          funnel_id: string
+          id: string
+          marketing_consent: boolean
+          owner_alerted_at: string | null
+          reminder_sent_at: string | null
+          revision: number
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          contact: Json
+          created_at?: string
+          funnel_id: string
+          id?: string
+          marketing_consent?: boolean
+          owner_alerted_at?: string | null
+          reminder_sent_at?: string | null
+          revision: number
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          contact?: Json
+          created_at?: string
+          funnel_id?: string
+          id?: string
+          marketing_consent?: boolean
+          owner_alerted_at?: string | null
+          reminder_sent_at?: string | null
+          revision?: number
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_funnel_partials_funnel_id_fkey"
+            columns: ["funnel_id"]
+            isOneToOne: false
+            referencedRelation: "call_funnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_funnel_requests: {
         Row: {
           actor_id: string
@@ -3819,6 +3869,17 @@ export type Database = {
       }
       call_funnel_application_view: {
         Args: { _token_hash: string }
+        Returns: Json
+      }
+      call_funnel_capture: {
+        Args: {
+          _answers: Json
+          _contact: Json
+          _marketing: boolean
+          _revision: number
+          _slug: string
+          _token_hash: string
+        }
         Returns: Json
       }
       call_funnel_cleanup: { Args: never; Returns: undefined }
