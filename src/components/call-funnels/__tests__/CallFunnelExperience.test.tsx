@@ -9,6 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import CallFunnelExperience from "../CallFunnelExperience";
+import { BookingStage } from "../CallBooking";
 import CallVideo from "../CallVideo";
 import { callVideoEmbed } from "../callVideoEmbed";
 import { callDraftKey, readCallDraft, saveCallDraft } from "../callFunnelDraft";
@@ -431,6 +432,72 @@ describe("Video + Application visitor flow", () => {
       (screen.getByRole("radio", { name: "Not yet" }) as HTMLInputElement)
         .checked,
     ).toBe(false);
+  });
+
+  it("embeds a GHL calendar prefilled with the applicant, with no status check", () => {
+    const publication = fixture();
+    publication.config.booking.url =
+      "https://api.aiforbusiness.com/widget/booking/mEmvmXjJ7RG3TywMLIir";
+    render(
+      <CallFunnelExperience
+        publication={publication}
+        initialState={state(publication)}
+        contact={{ name: "Pat Lee", email: "pat@example.com" }}
+        bookingPhone="5155550142"
+        onRefreshState={vi.fn()}
+      />,
+    );
+    const frame = screen.getByTitle("Choose a call time") as HTMLIFrameElement;
+    const src = new URL(frame.src);
+    expect(src.origin + src.pathname).toBe(
+      "https://api.aiforbusiness.com/widget/booking/mEmvmXjJ7RG3TywMLIir",
+    );
+    expect(src.searchParams.get("first_name")).toBe("Pat");
+    expect(src.searchParams.get("last_name")).toBe("Lee");
+    expect(src.searchParams.get("email")).toBe("pat@example.com");
+    expect(src.searchParams.get("phone")).toBe("5155550142");
+    expect(
+      document.querySelector(
+        'script[src="https://link.msgsndr.com/js/form_embed.js"]',
+      ),
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Check booking status" }),
+    ).toBeNull();
+    expect(screen.getByText(/Your details are already filled in/)).toBeTruthy();
+  });
+
+  it("names the showcase's booking host on the booking page instead of the funnel host", () => {
+    const publication = fixture();
+    publication.config.brand.hostName = "Brian Hanson";
+    publication.config.brand.hostBio = "Founder bio";
+    render(
+      <BookingStage
+        publication={publication}
+        state={state(publication)}
+        preview={false}
+        contact={null}
+        bookingNotes=""
+        showcase={{
+          showResults: false,
+          bookingHost: {
+            name: "Alex Ram or Mike Bach",
+            bio: "A strategist runs your call",
+          },
+        }}
+        accent="#b8860b"
+        embedCalendly={false}
+        refreshing={false}
+        bookingMessage=""
+        bookingError=""
+        onScheduled={() => {}}
+        onRefresh={null}
+        onPrepare={() => {}}
+      />,
+    );
+    expect(screen.getByText("Alex Ram or Mike Bach")).toBeTruthy();
+    expect(screen.getByText("A strategist runs your call")).toBeTruthy();
+    expect(screen.queryByText("Founder bio")).toBeNull();
   });
 
   it("does not claim a booking from a calendar handoff, and only unlocks preparation from a confirmed state", async () => {
