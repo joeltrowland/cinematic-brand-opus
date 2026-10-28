@@ -17,8 +17,10 @@ Business** GHL subaccount. The URL ending in
 `6cae6402-e310-4f07-8edc-4388a70a5aa5`, supplied by Mike, currently
 belongs to the published **Brian Hanson - Agency App Webhook to Contact**
 workflow. Its Create Contact action maps only first name, last name, email,
-and phone; it stores `application_summary` in a contact note. It is already
-handling the Agency & Consulting Application and does not map the Grok Bot
+and phone; it stores `application_summary` in a contact note. A real Grok Bot
+Setup Application submitted on October 28 reached that workflow and its full
+question-and-answer block appears in the contact note. The same workflow also
+handles the Agency & Consulting Application, and it does not map the Grok Bot
 custom fields. Create a separate Grok workflow and use its URL for this secret
 so agency application notifications and tags keep their existing behavior.
 Do not put the URL in source, a `VITE_` variable, or the browser. If the secret
