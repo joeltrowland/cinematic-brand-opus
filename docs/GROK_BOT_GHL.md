@@ -19,7 +19,8 @@ belongs to the published **Brian Hanson - Agency App Webhook to Contact**
 workflow. Its Create Contact action maps only first name, last name, email,
 and phone; it stores `application_summary` in a contact note. A real Grok Bot
 Setup Application submitted on October 28 reached that workflow and its full
-question-and-answer block appears in the contact note. The same workflow also
+question-and-answer block appears in the contact note. Its ten **Grok Bot
+Application** contact fields are blank on that record. The same workflow also
 handles the Agency & Consulting Application, and it does not map the Grok Bot
 custom fields. Create a separate Grok workflow and use its URL for this secret
 so agency application notifications and tags keep their existing behavior.
