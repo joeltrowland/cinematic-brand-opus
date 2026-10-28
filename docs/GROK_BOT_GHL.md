@@ -12,7 +12,15 @@ GoHighLevel inbound webhook:
    use the displayed option label.
 
 Both events use the private `GROK_BOT_GHL_WEBHOOK_URL` Edge Function secret.
-Set it to the inbound webhook URL for the **Ai for Business** GHL subaccount.
+Set it to a **Grok Bot application** inbound webhook URL for the **Ai for
+Business** GHL subaccount. The URL ending in
+`6cae6402-e310-4f07-8edc-4388a70a5aa5`, supplied by Mike, currently
+belongs to the published **Brian Hanson - Agency App Webhook to Contact**
+workflow. Its Create Contact action maps only first name, last name, email,
+and phone; it stores `application_summary` in a contact note. It is already
+handling the Agency & Consulting Application and does not map the Grok Bot
+custom fields. Create a separate Grok workflow and use its URL for this secret
+so agency application notifications and tags keep their existing behavior.
 Do not put the URL in source, a `VITE_` variable, or the browser. If the secret
 is absent, Grok Bot completed applications retain the existing global
 `call_funnel_webhook_url` behavior, but first-contact events are not sent.
