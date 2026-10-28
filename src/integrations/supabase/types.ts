@@ -46,6 +46,8 @@ export type Database = {
           answers: Json
           consent: boolean
           contact: Json
+          crm_claimed_at: string | null
+          crm_sent_at: string | null
           expires_at: string
           followup_sent_at: string | null
           funnel_id: string
@@ -63,6 +65,8 @@ export type Database = {
           answers: Json
           consent: boolean
           contact: Json
+          crm_claimed_at?: string | null
+          crm_sent_at?: string | null
           expires_at?: string
           followup_sent_at?: string | null
           funnel_id: string
@@ -80,6 +84,8 @@ export type Database = {
           answers?: Json
           consent?: boolean
           contact?: Json
+          crm_claimed_at?: string | null
+          crm_sent_at?: string | null
           expires_at?: string
           followup_sent_at?: string | null
           funnel_id?: string
@@ -3289,6 +3295,7 @@ export type Database = {
           auto_publish_enabled: boolean
           auto_publish_min_quality: number
           banned_phrases: string[]
+          call_funnel_webhook_url: string
           created_at: string
           default_expert_pov: string | null
           gsc_property: string | null
@@ -3306,6 +3313,7 @@ export type Database = {
           auto_publish_enabled?: boolean
           auto_publish_min_quality?: number
           banned_phrases?: string[]
+          call_funnel_webhook_url?: string
           created_at?: string
           default_expert_pov?: string | null
           gsc_property?: string | null
@@ -3323,6 +3331,7 @@ export type Database = {
           auto_publish_enabled?: boolean
           auto_publish_min_quality?: number
           banned_phrases?: string[]
+          call_funnel_webhook_url?: string
           created_at?: string
           default_expert_pov?: string | null
           gsc_property?: string | null
@@ -3887,6 +3896,7 @@ export type Database = {
         Args: { c: Json; publishing?: boolean }
         Returns: undefined
       }
+      call_funnel_crm_claim: { Args: { _id: string }; Returns: boolean }
       call_funnel_keys: {
         Args: { allowed: string[]; v: Json }
         Returns: boolean
