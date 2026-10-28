@@ -3,6 +3,7 @@ import { summitHref } from "../../lib/summitLink";
 import {
   brianAboutTestimonials,
   brianCallTestimonials,
+  brianGrokCallTestimonials,
   brianHomepageTestimonials,
   brianSpeakingTestimonials,
 } from "./brianTestimonials";
@@ -395,7 +396,7 @@ export const brianPreset: SiteConfig = {
     // of the work, so the page and the application use the same words.
     "grok-bot-setup": {
       chatSummary:
-        "Apply for done-with-you or done-for-you Grok Bot setup: a central brain that works across every A.I. tool you use, an interview about how your business runs and custom Grok Bot templates built for it. Pricing starts at $997. Applicants book a 30-minute call with Alex Ram or Mike Bach on the next page",
+        "Apply for done-with-you or done-for-you Grok Bot setup: a central brain that works across every A.I. tool you use, an interview about how your business runs and custom Grok Bot templates built for it. Pricing starts at $1,000. Applicants book a 30-minute call with Alex Ram or Mike Bach on the next page",
       showResults: true,
       marketingConsent:
         "Also send me AI news, updates and related offers by phone, text and email. Optional, not required to apply. Message frequency varies. Reply STOP to opt out",
@@ -413,7 +414,7 @@ export const brianPreset: SiteConfig = {
             text: "One home for your business that every AI tool can use",
             items: [
               "Your offers, voice and customers in one place",
-              "Works across every AI tool you use",
+              "Your AI tools share one memory and hand off work",
             ],
           },
           {
@@ -430,6 +431,7 @@ export const brianPreset: SiteConfig = {
             items: [
               "Custom Grok Bot templates",
               "Connected to the tools you already use",
+              "You own the rights and can sell them in your niche",
             ],
           },
           {
@@ -462,7 +464,7 @@ export const brianPreset: SiteConfig = {
           text: "We map your first bots, then walk you through scope, timeline and price",
         },
       ],
-      testimonials: brianCallTestimonials,
+      testimonials: brianGrokCallTestimonials,
     },
   },
 
